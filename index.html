@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Badminton Split</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f5f5f5;min-height:100vh;padding:16px}
+.app{max-width:480px;margin:0 auto}
+h1{font-size:20px;font-weight:600;margin-bottom:4px;color:#1a1a1a}
+.subtitle{font-size:13px;color:#888;margin-bottom:20px}
+.card{background:#fff;border-radius:14px;padding:20px;margin-bottom:14px;border:1px solid #e8e8e8}
+.card-title{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:14px}
+.step-badge{display:inline-block;background:#1a1a1a;color:#fff;font-size:11px;font-weight:600;border-radius:50%;width:20px;height:20px;line-height:20px;text-align:center;margin-right:8px}
+label{font-size:14px;color:#444;display:block;margin-bottom:4px}
+input,select{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;color:#1a1a1a;background:#fff;outline:none;transition:border .15s}
+input:focus,select:focus{border-color:#555}
+.row{display:flex;gap:10px;align-items:flex-end}
+.row>*{flex:1}
+.players-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.player-chip{display:flex;align-items:center;gap:6px;background:#f5f5f5;border:1px solid #ddd;border-radius:20px;padding:6px 12px;font-size:13px;cursor:pointer;transition:all .15s}
+.player-chip.selected{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.player-chip .remove{font-size:16px;line-height:1;opacity:.5}
+.add-player{display:flex;gap:8px;margin-bottom:10px}
+.add-player input{flex:1}
+.btn{padding:10px 16px;border-radius:8px;border:none;font-size:14px;font-weight:500;cursor:pointer;transition:all .15s}
+.btn-primary{background:#1a1a1a;color:#fff}
+.btn-primary:hover{background:#333}
+.btn-primary:disabled{background:#ccc;cursor:default}
+.btn-sm{padding:7px 12px;font-size:13px;border-radius:7px}
+.btn-outline{background:#fff;border:1px solid #ddd;color:#444}
+.btn-outline:hover{border-color:#999}
+.btn-danger{background:#fff;border:1px solid #fcc;color:#e44}
+.btn-danger:hover{background:#fff5f5}
+.court-block{background:#f9f9f9;border-radius:10px;padding:14px;margin-bottom:10px;border:1px solid #eee}
+.court-label{font-size:13px;font-weight:600;color:#555;margin-bottom:10px}
+.form-group{margin-bottom:12px}
+.hint{font-size:12px;color:#aaa;margin-top:4px}
+.result-card{background:#1a1a1a;color:#fff;border-radius:14px;padding:20px;margin-bottom:14px}
+.result-card h2{font-size:16px;font-weight:600;margin-bottom:4px}
+.result-subtitle{font-size:12px;color:#888;margin-bottom:16px}
+.result-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #2a2a2a;font-size:14px}
+.result-row:last-child{border-bottom:none}
+.result-row .name{color:#bbb}
+.result-row .amount{font-weight:600}
+.amount.positive{color:#4ade80}
+.amount.negative{color:#f87171}
+.amount.zero{color:#888}
+.transfers{background:#fff;border-radius:14px;padding:20px;margin-bottom:14px;border:1px solid #e8e8e8}
+.transfer-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f0f0f0;font-size:14px}
+.transfer-row:last-child{border-bottom:none}
+.arrow{color:#888;font-size:16px}
+.transfer-amount{font-weight:600;color:#1a1a1a;margin-left:auto}
+.share-btn{width:100%;padding:14px;border-radius:10px;background:#25D366;color:#fff;border:none;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.share-btn:hover{background:#1fb858}
+.copy-btn{width:100%;padding:12px;border-radius:10px;background:#f0f0f0;color:#333;border:none;font-size:14px;font-weight:500;cursor:pointer;margin-top:8px}
+.copy-btn:hover{background:#e0e0e0}
+.nav{display:flex;gap:6px;margin-bottom:20px}
+.nav-dot{height:4px;border-radius:2px;flex:1;background:#ddd;transition:background .2s}
+.nav-dot.active{background:#1a1a1a}
+.nav-dot.done{background:#888}
+.total-line{display:flex;justify-content:space-between;font-size:13px;color:#888;padding:4px 0}
+.total-line b{color:#1a1a1a}
+.payer-select{width:100%}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>🏸 Badminton Split</h1>
+  <p class="subtitle">Split court &amp; shuttle costs in seconds</p>
+  <div class="nav" id="nav">
+    <div class="nav-dot active" id="dot-0"></div>
+    <div class="nav-dot" id="dot-1"></div>
+    <div class="nav-dot" id="dot-2"></div>
+    <div class="nav-dot" id="dot-3"></div>
+  </div>
+
+  <!-- STEP 1: Players -->
+  <div id="step-0">
+    <div class="card">
+      <div class="card-title"><span class="step-badge">1</span>Who played today?</div>
+      <div class="add-player">
+        <input type="text" id="playerInput" placeholder="Add a name…" onkeydown="if(event.key==='Enter')addPlayer()">
+        <button class="btn btn-primary btn-sm" onclick="addPlayer()">Add</button>
+      </div>
+      <div class="players-grid" id="playersList"></div>
+      <p class="hint" style="margin-top:10px">Add names of players, then continue.</p>
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="goStep(1)" id="btn-step0" disabled>Continue →</button>
+  </div>
+
+  <!-- STEP 2: Shuttles -->
+  <div id="step-1" style="display:none">
+    <div class="card">
+      <div class="card-title"><span class="step-badge">2</span>Shuttles</div>
+      <div class="row">
+        <div class="form-group">
+          <label>Number of shuttles</label>
+          <input type="number" id="shuttleCount" value="3" min="0" oninput="updateShuttleCost()">
+        </div>
+        <div class="form-group">
+          <label>Price per shuttle (VND)</label>
+          <input type="number" id="shuttlePrice" value="29200" step="1000" oninput="updateShuttleCost()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Who paid for the shuttles?</label>
+        <select id="shuttlePayer" class="payer-select"></select>
+      </div>
+      <div class="total-line"><span>Shuttle total</span><b id="shuttleTotal">87,600 VND</b></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline" onclick="goStep(0)">← Back</button>
+      <button class="btn btn-primary" style="flex:1" onclick="goStep(2)">Continue →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: Courts -->
+  <div id="step-2" style="display:none">
+    <div class="card">
+      <div class="card-title"><span class="step-badge">3</span>Courts</div>
+      <div id="courtsList"></div>
+      <button class="btn btn-outline btn-sm" onclick="addCourt()" id="addCourtBtn">+ Add court</button>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline" onclick="goStep(1)">← Back</button>
+      <button class="btn btn-primary" style="flex:1" onclick="goStep(3)">Calculate split →</button>
+    </div>
+  </div>
+
+  <!-- STEP 4: Result -->
+  <div id="step-3" style="display:none">
+    <div id="resultArea"></div>
+  </div>
+</div>
+
+<script>
+let players = [];
+let courts = [];
+
+function fmt(n) {
+  return Math.round(n).toLocaleString('vi-VN');
+}
+
+function addPlayer() {
+  const inp = document.getElementById('playerInput');
+  const name = inp.value.trim();
+  if (!name || players.includes(name)) return;
+  players.push(name);
+  inp.value = '';
+  renderPlayers();
+}
+
+function removePlayer(name) {
+  players = players.filter(p => p !== name);
+  renderPlayers();
+}
+
+function renderPlayers() {
+  const el = document.getElementById('playersList');
+  el.innerHTML = players.map(p =>
+    `<div class="player-chip selected">${p}<span class="remove" onclick="removePlayer('${p}')" style="margin-left:4px;cursor:pointer">×</span></div>`
+  ).join('');
+  document.getElementById('btn-step0').disabled = players.length < 2;
+}
+
+function updateShuttleCost() {
+  const n = parseInt(document.getElementById('shuttleCount').value) || 0;
+  const p = parseInt(document.getElementById('shuttlePrice').value) || 0;
+  document.getElementById('shuttleTotal').textContent = fmt(n * p) + ' VND';
+}
+
+function populateSelects() {
+  const opts = players.map(p => `<option value="${p}">${p}</option>`).join('');
+  document.getElementById('shuttlePayer').innerHTML = opts;
+  courts.forEach((c, i) => {
+    const sel = document.getElementById(`courtPayer-${i}`);
+    if (sel) sel.innerHTML = opts;
+  });
+}
+
+function addCourt() {
+  courts.push({ price: 200000, payer: players[0] });
+  renderCourts();
+}
+
+function removeCourt(i) {
+  courts.splice(i, 1);
+  renderCourts();
+}
+
+function renderCourts() {
+  const el = document.getElementById('courtsList');
+  const opts = players.map(p => `<option value="${p}">${p}</option>`).join('');
+  el.innerHTML = courts.map((c, i) => `
+    <div class="court-block">
+      <div class="court-label">Court ${i + 1} ${courts.length > 1 ? `<button class="btn btn-danger btn-sm" style="float:right;padding:3px 8px;font-size:12px" onclick="removeCourt(${i})">Remove</button>` : ''}</div>
+      <div class="row">
+        <div class="form-group">
+          <label>Price (VND)</label>
+          <input type="number" id="courtPrice-${i}" value="${c.price}" step="10000" oninput="courts[${i}].price=parseInt(this.value)||0">
+        </div>
+        <div class="form-group">
+          <label>Paid by</label>
+          <select id="courtPayer-${i}" class="payer-select" onchange="courts[${i}].payer=this.value">${opts}</select>
+        </div>
+      </div>
+    </div>`).join('');
+  courts.forEach((c, i) => {
+    const sel = document.getElementById(`courtPayer-${i}`);
+    if (sel) sel.value = c.payer || players[0];
+  });
+  document.getElementById('addCourtBtn').style.display = courts.length >= 6 ? 'none' : 'inline-block';
+}
+
+function goStep(n) {
+  if (n === 1) {
+    if (players.length < 2) { alert('Add at least 2 players.'); return; }
+    populateSelects();
+    updateShuttleCost();
+  }
+  if (n === 2) {
+    if (courts.length === 0) addCourt();
+    renderCourts();
+  }
+  if (n === 3) calculate();
+  for (let i = 0; i < 4; i++) {
+    document.getElementById(`step-${i}`).style.display = i === n ? 'block' : 'none';
+    const dot = document.getElementById(`dot-${i}`);
+    if (i < n) dot.className = 'nav-dot done';
+    else if (i === n) dot.className = 'nav-dot active';
+    else dot.className = 'nav-dot';
+  }
+}
+
+function calculate() {
+  const sc = parseInt(document.getElementById('shuttleCount').value) || 0;
+  const sp = parseInt(document.getElementById('shuttlePrice').value) || 29200;
+  const shuttleTotal = sc * sp;
+  const shuttlePayer = document.getElementById('shuttlePayer').value;
+
+  courts.forEach((c, i) => {
+    c.price = parseInt(document.getElementById(`courtPrice-${i}`)?.value) || 0;
+    c.payer = document.getElementById(`courtPayer-${i}`)?.value || players[0];
+  });
+
+  const courtTotal = courts.reduce((s, c) => s + c.price, 0);
+  const grandTotal = shuttleTotal + courtTotal;
+  const perPerson = grandTotal / players.length;
+
+  const balances = {};
+  players.forEach(p => balances[p] = 0);
+  balances[shuttlePayer] = (balances[shuttlePayer] || 0) + shuttleTotal;
+  courts.forEach(c => { balances[c.payer] = (balances[c.payer] || 0) + c.price; });
+  players.forEach(p => { balances[p] -= perPerson; });
+
+  // Compute minimal transfers
+  let pos = players.filter(p => balances[p] > 0.5).map(p => ({ name: p, amt: balances[p] }));
+  let neg = players.filter(p => balances[p] < -0.5).map(p => ({ name: p, amt: -balances[p] }));
+  let transfers = [];
+  let pi = 0, ni = 0;
+  while (pi < pos.length && ni < neg.length) {
+    const amt = Math.min(pos[pi].amt, neg[ni].amt);
+    if (amt > 0.5) transfers.push({ from: neg[ni].name, to: pos[pi].name, amt: Math.round(amt) });
+    pos[pi].amt -= amt; neg[ni].amt -= amt;
+    if (pos[pi].amt < 0.5) pi++;
+    if (neg[ni].amt < 0.5) ni++;
+  }
+
+  const shuttleSummary = `${sc} shuttles x ${fmt(sp)}: ${fmt(shuttleTotal)} VND (paid by ${shuttlePayer})`;
+  const courtSummary = courts.map((c, i) => `Court ${i + 1}: ${fmt(c.price)} VND (paid by ${c.payer})`).join('\n');
+  const paidLines = players.map(p => { const v = balances[p] + perPerson; return `${p} paid ${fmt(v)} VND`; }).join('\n');
+  const transferLines = transfers.map(t => `${t.from} → ${t.to}: ${fmt(t.amt)} VND`).join('\n');
+
+  const shareText =
+`🏸 Badminton Split
+━━━━━━━━━━━━━━
+Players: ${players.join(', ')}
+
+${shuttleSummary}
+${courtSummary}
+
+Grand total: ${fmt(grandTotal)} VND
+Per person: ${fmt(perPerson)} VND
+
+What each person paid:
+${paidLines}
+
+💸 Who pays who:
+${transferLines || 'All settled!'}`;
+
+  const paidBreakdown = players.map(p => {
+    const paid = balances[p] + perPerson;
+    const diff = balances[p];
+    const cls = diff > 0.5 ? 'positive' : diff < -0.5 ? 'negative' : 'zero';
+    const label = diff > 0.5 ? `gets back ${fmt(diff)}` : diff < -0.5 ? `owes ${fmt(-diff)}` : 'settled';
+    return `<div class="result-row"><span class="name">${p}</span><span class="amount ${cls}">${fmt(paid)} VND <span style="font-size:12px;font-weight:400">(${label})</span></span></div>`;
+  }).join('');
+
+  const transferHTML = transfers.length
+    ? transfers.map(t => `<div class="transfer-row"><b>${t.from}</b><span class="arrow">→</span><b>${t.to}</b><span class="transfer-amount">${fmt(t.amt)} VND</span></div>`).join('')
+    : '<p style="color:#888;font-size:14px;padding:8px 0">Everyone is settled! 🎉</p>';
+
+  const escaped = shareText.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$');
+
+  document.getElementById('resultArea').innerHTML = `
+    <div class="result-card">
+      <h2>Grand total: ${fmt(grandTotal)} VND</h2>
+      <p class="result-subtitle">${fmt(perPerson)} VND per person · ${players.length} players</p>
+      <div class="total-line" style="border-top:1px solid #2a2a2a;padding-top:10px;margin-top:4px"><span style="color:#888">🏸 ${sc} shuttles</span><span style="color:#bbb">${fmt(shuttleTotal)} VND</span></div>
+      ${courts.map((c, i) => `<div class="total-line"><span style="color:#888">🏟️ Court ${i + 1}</span><span style="color:#bbb">${fmt(c.price)} VND</span></div>`).join('')}
+      <div style="height:12px"></div>
+      ${paidBreakdown}
+    </div>
+    <div class="transfers card">
+      <div class="card-title">💸 Transfers needed</div>
+      ${transferHTML}
+    </div>
+    <button class="share-btn" onclick="shareResult()">📤 Share to group chat</button>
+    <button class="copy-btn" onclick="copyResult()">📋 Copy text</button>
+    <button class="btn btn-outline" style="width:100%;margin-top:8px" onclick="newSession()">🔄 New session</button>
+  `;
+
+  window._shareText = shareText;
+}
+
+function shareResult() {
+  if (navigator.share) {
+    navigator.share({ text: window._shareText }).catch(() => copyResult());
+  } else {
+    copyResult();
+  }
+}
+
+function copyResult() {
+  navigator.clipboard.writeText(window._shareText).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    if (btn) { btn.textContent = '✓ Copied!'; setTimeout(() => btn.textContent = '📋 Copy text', 2000); }
+  });
+}
+
+function newSession() {
+  players = [];
+  courts = [];
+  renderPlayers();
+  goStep(0);
+}
+
+renderPlayers();
+</script>
+</body>
+</html>
